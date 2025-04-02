@@ -1,0 +1,88 @@
+#define _CRT_SECURE_NO_WARNINGS
+#include <stdio.h>
+#include <stdlib.h>
+
+
+//Litoiu Iuliana => L & I
+
+struct Librarie {
+    int cod;
+    char* nume;
+    int nrCarti;
+    float* preturi;
+};
+
+// Funcție pentru citirea unui obiect de tip Librarie
+struct Librarie citire() {
+    struct Librarie l;
+    printf("\nIntroduceti codul librariei: ");
+    scanf("%d", &l.cod);
+
+    printf("Introduceti numele librariei: ");
+    getchar(); 
+    l.nume = (char*)malloc(100 * sizeof(char));
+    fgets(l.nume, 100, stdin);
+
+    printf("Introduceti numarul de carti: ");
+    scanf("%d", &l.nrCarti);
+
+    if (l.nrCarti > 0) {
+        l.preturi = (float*)malloc(l.nrCarti * sizeof(float));
+        for (int i = 0; i < l.nrCarti; i++) {
+            printf("Introduceti pretul cartii %d: ", i + 1);
+            scanf("%f", &l.preturi[i]);
+        }
+    } else {
+        l.preturi = NULL;
+    }
+
+    return l;
+}
+
+// Funcție pentru afișarea unei librării
+void afisare(const struct Librarie l) {
+    printf("\nCod librarie: %d", l.cod);
+    printf("\nNume: %s", l.nume);
+    printf("Numar carti: %d", l.nrCarti);
+
+    if (l.nrCarti > 0) {
+        printf("\nPreturi carti:");
+        for (int i = 0; i < l.nrCarti; i++) {
+            printf("\n  Cartea %d: %.2f lei", i + 1, l.preturi[i]);
+        }
+    }
+    printf("\n");
+}
+
+// Funcție care calculează media prețurilor cărților
+float mediePreturi(const struct Librarie l) {
+    if (l.nrCarti == 0) return 0;
+    float suma = 0;
+    for (int i = 0; i < l.nrCarti; i++) {
+        suma += l.preturi[i];
+    }
+    return suma / l.nrCarti;
+}
+
+// Funcție care modifică codul unei librării
+void modificareCod(struct Librarie* l, int codNou) {
+    l->cod = codNou;
+}
+
+int main() {
+    struct Librarie l1 = citire();
+    printf("\nDatele librariei citite:\n");
+    afisare(l1);
+
+    printf("\nMedia preturilor cartilor: %.2f lei\n", mediePreturi(l1));
+
+    modificareCod(&l1, 123456);
+    printf("\nCodul librariei dupa modificare: %d\n", l1.cod);
+    printf("Datele librariei dupa modificare:\n");
+    afisare(l1);
+
+    free(l1.nume);
+    free(l1.preturi);
+
+    return 0;
+}

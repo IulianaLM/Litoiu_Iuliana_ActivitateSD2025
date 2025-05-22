@@ -1,0 +1,249 @@
+#define _CRT_SECURE_NO_WARNINGS
+#include <stdio.h>
+#include <malloc.h>
+#include <string.h>
+
+// Litoiu Iuliana => L & I
+
+struct Librarie {
+    int cod;
+    char* nume;
+    int nrCarti;
+    float* preturi;
+};
+
+struct Librarie citire() {
+    struct Librarie l;
+
+    printf("\nIntroduceti codul librariei: ");
+    scanf("%d", &l.cod);
+
+    printf("Introduceti numele librariei: ");
+    getchar();
+    l.nume = (char*)malloc(100 * sizeof(char));
+    fgets(l.nume, 100, stdin);
+    l.nume[strcspn(l.nume, "\n")] = '\0';
+
+    printf("Introduceti numarul de carti: ");
+    scanf("%d", &l.nrCarti);
+
+    if (l.nrCarti > 0) {
+        l.preturi = (float*)malloc(l.nrCarti * sizeof(float));
+        for (int i = 0; i < l.nrCarti; i++) {
+            printf("  Pretul cartii %d: ", i + 1);
+            scanf("%f", &l.preturi[i]);
+        }
+    }
+    return l;
+}
+
+float mediePreturi(struct Librarie l) {
+    float suma = 0;
+    for (int i = 0; i < l.nrCarti; i++)
+        suma += l.preturi[i];
+    return (l.nrCarti > 0) ? suma / l.nrCarti : 0;
+}
+
+void modificareCod(struct Librarie* l, int codNou) {
+    l->cod = codNou;
+}
+
+void afisareLibrarie(struct Librarie l) {
+    printf("\nCod: %d", l.cod);
+    printf("\nNume: %s", l.nume);
+    printf("\nNumar carti: %d", l.nrCarti);
+    if (l.preturi != NULL) {
+        printf("\nPreturi carti:");
+        for (int i = 0; i < l.nrCarti; i++)
+            printf("\n  Cartea %d: %.2f lei", i + 1, l.preturi[i]);
+    }
+    printf("\n");
+}
+
+struct Librarie* vectorMinim3Carti(struct Librarie* vectorLibrarii, int dim) {
+    int nr = 0;
+    for (int i = 0; i < dim; i++)
+        if (vectorLibrarii[i].nrCarti >= 3) nr++;
+
+    struct Librarie* vectorNou = (struct Librarie*)malloc(nr * sizeof(struct Librarie));
+    nr = 0;
+    for (int i = 0; i < dim; i++) {
+        if (vectorLibrarii[i].nrCarti >= 3) {
+            vectorNou[nr].cod = vectorLibrarii[i].cod;
+            vectorNou[nr].nume = (char*)malloc(100 * sizeof(char));
+            strcpy(vectorNou[nr].nume, vectorLibrarii[i].nume);
+            vectorNou[nr].nrCarti = vectorLibrarii[i].nrCarti;
+            vectorNou[nr].preturi = (float*)malloc(vectorNou[nr].nrCarti * sizeof(float));
+            for (int j = 0; j < vectorNou[nr].nrCarti; j++)
+                vectorNou[nr].preturi[j] = vectorLibrarii[i].preturi[j];
+            afisareLibrarie(vectorNou[nr]);
+            nr++;
+        }
+    }
+    return vectorNou;
+}
+
+struct Librarie copiereLibrarie(struct Librarie l) {
+    struct Librarie nou;
+    nou.cod = l.cod;
+    nou.nume = (char*)malloc(100 * sizeof(char));
+    strcpy(nou.nume, l.nume);
+    nou.nrCarti = l.nrCarti;
+    nou.preturi = (float*)malloc(l.nrCarti * sizeof(float));
+    for (int i = 0; i < l.nrCarti; i++)
+        nou.preturi[i] = l.preturi[i];
+    return nou;
+}
+
+void mutareLibrarii(struct Librarie* l, int dim) {
+    int nr = 0, j = 0, k = 0;
+    for (int i = 0; i < dim; i++) {
+        if (mediePreturi(l[i]) < 50) nr++;
+    }
+    struct Librarie* sub50 = (struct Librarie*)malloc(nr * sizeof(struct Librarie));
+    struct Librarie* peste50 = (struct Librarie*)malloc((dim - nr) * sizeof(struct Librarie));
+
+    for (int i = 0; i < dim; i++) {
+        if (mediePreturi(l[i]) < 50)
+            sub50[j++] = copiereLibrarie(l[i]);
+        else
+            peste50[k++] = copiereLibrarie(l[i]);
+    }
+
+    printf("\n--- Librarii cu medie sub 50 lei ---\n");
+    for (int i = 0; i < j; i++)
+        afisareLibrarie(sub50[i]);
+
+    printf("\n--- Librarii cu medie peste sau egala cu 50 lei ---\n");
+    for (int i = 0; i < k; i++)
+        afisareLibrarie(peste50[i]);
+}
+
+struct Librarie* concateneazaVectori(struct Librarie* vector1, int dim1, struct Librarie* vector2, int dim2) {
+    int dimTotala = dim1 + dim2;
+    struct Librarie* vectorNou = (struct Librarie*)malloc(dimTotala * sizeof(struct Librarie));
+    for (int i = 0; i < dim1; i++)
+        vectorNou[i] = copiereLibrarie(vector1[i]);
+    for (int i = 0; i < dim2; i++)
+        vectorNou[dim1 + i] = copiereLibrarie(vector2[i]);
+    return vectorNou;
+}
+
+
+int citesteDinFisier(const char* numeFisier, struct Librarie** vector) {
+    FILE* f = fopen(numeFisier, "r");
+    if (!f) {
+        printf("Eroare la deschiderea fisierului.\n");
+        return 0;
+    }
+
+    int dim;
+    fscanf(f, "%d", &dim);
+    *vector = (struct Librarie*)malloc(dim * sizeof(struct Librarie));
+
+    for (int i = 0; i < dim; i++) {
+        fscanf(f, "%d", &((*vector)[i].cod));
+
+        char buffer[100];
+        fgetc(f); 
+        fgets(buffer, 100, f);
+        buffer[strcspn(buffer, "\n")] = '\0';
+        (*vector)[i].nume = (char*)malloc(strlen(buffer) + 1);
+        strcpy((*vector)[i].nume, buffer);
+
+        fscanf(f, "%d", &((*vector)[i].nrCarti));
+        (*vector)[i].preturi = (float*)malloc((*vector)[i].nrCarti * sizeof(float));
+        for (int j = 0; j < (*vector)[i].nrCarti; j++) {
+            fscanf(f, "%f", &((*vector)[i].preturi[j]));
+        }
+    }
+
+    fclose(f);
+    return dim;
+}
+void salveazaLibrarieInFisier(const char* numeFisier, struct Librarie l) {
+    FILE* f = fopen(numeFisier, "a");
+    if (!f) return;
+
+    fprintf(f, "%d\n", l.cod);
+    fprintf(f, "%s\n", l.nume);
+    fprintf(f, "%d\n", l.nrCarti);
+    for (int i = 0; i < l.nrCarti; i++)
+        fprintf(f, "%.2f ", l.preturi[i]);
+    fprintf(f, "\n");
+
+    fclose(f);
+}
+void salveazaVectorInFisier(const char* numeFisier, struct Librarie* vector, int dim) {
+    FILE* f = fopen(numeFisier, "w");
+    if (!f) return;
+
+    fprintf(f, "%d\n", dim); 
+    for (int i = 0; i < dim; i++) {
+        fprintf(f, "%d\n", vector[i].cod);
+        fprintf(f, "%s\n", vector[i].nume);
+        fprintf(f, "%d\n", vector[i].nrCarti);
+        for (int j = 0; j < vector[i].nrCarti; j++)
+            fprintf(f, "%.2f ", vector[i].preturi[j]);
+        fprintf(f, "\n");
+    }
+
+    fclose(f);
+}
+
+
+
+int main() {
+    const char* numeLibrarii[] = { "Carturesti", "Humanitas", "Diverta", "Librex", "Bookster" };
+    struct Librarie* vectorLibrarii = (struct Librarie*)malloc(5 * sizeof(struct Librarie));
+
+    for (int i = 0; i < 5; i++) {
+        vectorLibrarii[i].cod = 1000 + i * 100;
+        vectorLibrarii[i].nume = (char*)malloc(100 * sizeof(char));
+        strcpy(vectorLibrarii[i].nume, numeLibrarii[i]);
+        vectorLibrarii[i].nrCarti = i + 1;
+        vectorLibrarii[i].preturi = (float*)malloc(vectorLibrarii[i].nrCarti * sizeof(float));
+        for (int j = 0; j < vectorLibrarii[i].nrCarti; j++) {
+            vectorLibrarii[i].preturi[j] = (float)((i + 1) * (j + 1) * 10.5);
+        }
+    }
+
+    printf("\n=== Librarii initiale ===\n");
+    for (int i = 0; i < 5; i++)
+        afisareLibrarie(vectorLibrarii[i]);
+
+    printf("\n=== Librarii cu minim 3 carti ===\n");
+    struct Librarie* vectorNou = vectorMinim3Carti(vectorLibrarii, 5);
+
+    printf("\n=== Mutare pe medie preturi < 50 ===\n");
+    mutareLibrarii(vectorLibrarii, 5);
+
+    struct Librarie* vectorExtra = (struct Librarie*)malloc(2 * sizeof(struct Librarie));
+    for (int i = 0; i < 2; i++) {
+        vectorExtra[i].cod = 2000 + i * 100;
+        vectorExtra[i].nume = (char*)malloc(100 * sizeof(char));
+        sprintf(vectorExtra[i].nume, "ExtraLibrarie%d", i + 1);
+        vectorExtra[i].nrCarti = 2 + i;
+        vectorExtra[i].preturi = (float*)malloc(vectorExtra[i].nrCarti * sizeof(float));
+        for (int j = 0; j < vectorExtra[i].nrCarti; j++) {
+            vectorExtra[i].preturi[j] = 15 + j * 5;
+        }
+    }
+
+    struct Librarie* vectorConcatenat = concateneazaVectori(vectorLibrarii, 5, vectorExtra, 2);
+
+    printf("\n=== Vector concatenat ===\n");
+    for (int i = 0; i < 7; i++)
+        afisareLibrarie(vectorConcatenat[i]);
+
+    salveazaVectorInFisier("librarii.txt", vectorConcatenat, 7);
+
+    struct Librarie* vectorCitit = NULL;
+    int nrLibrarii = citesteDinFisier("librarii.txt", &vectorCitit);
+
+    printf("\n=== Librarii citite din fisier ===\n");
+    for (int i = 0; i < nrLibrarii; i++)
+        afisareLibrarie(vectorCitit[i]);
+
+    return 0;
+}
